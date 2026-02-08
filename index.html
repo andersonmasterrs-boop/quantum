@@ -1,0 +1,1532 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Quantum AI Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a33;
+      --muted: #8ea0c6;
+      --text: #e8eeff;
+      --border: rgba(255,255,255,.08);
+      --accent: #5b8cff;
+      --accent2: #7c5bff;
+      --accent3: #ffcc66;
+      --good: #3ddc97;
+      --bad: #ff5b6e;
+      --warn: #ffcc66;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 700px at 10% 0%, rgba(91,140,255,.18), transparent 55%),
+                  radial-gradient(900px 600px at 90% 20%, rgba(61,220,151,.12), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+    header {
+      padding: 18px 18px 8px;
+      display:flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .title {
+      display:flex; flex-direction: column; gap: 4px;
+    }
+    .title h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .2px;
+    }
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .controls {
+      display:flex; gap: 10px; align-items:center; flex-wrap: wrap;
+    }
+    .btn {
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn:hover { border-color: rgba(255,255,255,.18); }
+    .pill {
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    main { padding: 10px 18px 18px; }
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.18);
+      min-width: 0;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+    .kpi {
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .kpi .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .kpi .value {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    .kpi .sub {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .badge {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .badge.good { color: var(--good); border-color: rgba(61,220,151,.3); background: rgba(61,220,151,.08); }
+    .badge.bad { color: var(--bad); border-color: rgba(255,91,110,.3); background: rgba(255,91,110,.08); }
+
+    .span-2 { grid-column: span 2; }
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    @media (max-width: 1100px) {
+      .span-3, .span-4 { grid-column: span 6; }
+      .span-6, .span-8 { grid-column: span 12; }
+    }
+    @media (max-width: 640px) {
+      .span-2, .span-3, .span-4 { grid-column: span 12; }
+    }
+
+    .row {
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 8px 0 0;
+    }
+    label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    select, input[type="date"], input[type="text"] {
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      outline: none;
+    }
+    .chartWrap {
+      height: 280px;
+      position: relative;
+    }
+    canvas { width: 100%; height: 100%; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+    }
+    tr:hover td { background: rgba(255,255,255,.03); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pos { color: var(--good); }
+    .neg { color: var(--bad); }
+    .muted { color: var(--muted); }
+
+    /* Robot selector pills */
+    .robot-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .robot-pill {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      transition: all 0.3s;
+    }
+    .robot-pill:hover {
+      background: rgba(255,255,255,.08);
+    }
+    .robot-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg);
+    }
+    .robot-pill.robot-1 { --color: #5b8cff; }
+    .robot-pill.robot-2 { --color: #3ddc97; }
+    .robot-pill.robot-3 { --color: #ffcc66; }
+    .robot-pill.robot-4 { --color: #7c5bff; }
+    .robot-pill.robot-5 { --color: #ff5b6e; }
+
+    /* Level badges */
+    .level-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .level-1 { background: rgba(91,140,255,.2); color: #5b8cff; }
+    .level-2 { background: rgba(255,204,102,.2); color: #ffcc66; }
+    .level-3 { background: rgba(124,91,255,.2); color: #7c5bff; }
+
+    .btnBuy{
+      background: linear-gradient(135deg, rgba(255,204,102,0.95), rgba(255,91,110,0.90));
+      border: 1px solid rgba(255,204,102,0.35);
+      color: rgba(20, 20, 24, 0.92);
+      font-weight: 800;
+      box-shadow: 0 10px 30px rgba(255,91,110,0.18);
+    }
+    .btnBuy:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+
+    /* Mini cards grid */
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .mini-card {
+      background: rgba(255,255,255,.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+    .mini-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .mini-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .mini-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>RESULTADOS QUANTUM AI</h1>
+      <p>Sistema Multi-Robô com Níveis de Agressividade</p>
+    </div>
+    <div class="controls">
+      <span id="status" class="pill">Pronto</span>
+      <button class="btn" id="btnRefresh">Atualizar dados</button>
+      <a class="btn btnBuy" target="_blank" rel="noopener" href="https://lastlink.com/p/CEEF6BC6E/checkout-payment/">Comprar Quantum AI</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      
+      <!-- RESUMO PRINCIPAL NO TOPO -->
+      <div class="card span-3">
+        <div class="kpi">
+          <div>
+            <div class="label">Resultado (Últimos 30 dias)</div>
+            <div class="value" id="main_total">R$ 0</div>
+            <div class="sub" id="main_period">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-2">
+        <div class="kpi">
+          <div>
+            <div class="label">Dias</div>
+            <div class="value" id="main_days">0</div>
+            <div class="sub"><span class="pos" id="main_pos">0</span> pos · <span class="neg" id="main_neg">0</span> neg</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-2">
+        <div class="kpi">
+          <div>
+            <div class="label">Win rate</div>
+            <div class="value" id="main_winrate">0%</div>
+            <div class="sub">Taxa de acerto</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-3">
+        <div class="kpi">
+          <div>
+            <div class="label">Melhor dia</div>
+            <div class="value pos" id="main_best">R$ 0</div>
+            <div class="sub" id="main_best_date">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-2">
+        <div class="kpi">
+          <div>
+            <div class="label">Pior dia</div>
+            <div class="value neg" id="main_worst">R$ 0</div>
+            <div class="sub" id="main_worst_date">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CURVA ACUMULADA E RESULTADO POR MÊS -->
+      <div class="card span-8">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <div style="font-weight: 700; margin-bottom: 4px;">Curva acumulada (filtrada)</div>
+            <div style="font-size: 11px; color: var(--muted);">
+              Mostra como o resultado evolui ao longo do tempo.
+            </div>
+          </div>
+          <select id="mainViewSelector" style="padding: 6px 10px; font-size: 11px;">
+            <option value="level3">Nível 3 (10,10,10,10,2)</option>
+            <option value="level2">Nível 2 (5,5,5,5,1)</option>
+            <option value="level1">Nível 1 (3,3,3,3,1)</option>
+            <option value="all">Todos os Robôs (soma)</option>
+          </select>
+        </div>
+        <div class="chartWrap" style="height: 220px;">
+          <canvas id="mainCurveChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card span-4">
+        <div style="font-weight: 700; margin-bottom: 8px;">Resultado por mês</div>
+        <div style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">
+          Soma dos dias por mês (mesma visualização).
+        </div>
+        <div class="chartWrap" style="height: 220px;">
+          <canvas id="monthlyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- FILTROS (COMPACTOS) -->
+      <div class="card span-12" style="background: rgba(255,255,255,.02);">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div style="font-weight: 700; font-size: 13px;">⚙️ Filtros:</div>
+          <select id="fPeriod" style="padding: 8px 12px; font-size: 12px;">
+            <option value="custom" selected>Últimos 30 dias</option>
+            <option value="all">Todo período</option>
+            <option value="today">Hoje</option>
+            <option value="week">Última semana</option>
+            <option value="month">Último mês</option>
+          </select>
+          <input id="fStart" type="date" style="padding: 8px 10px; font-size: 12px;"/>
+          <input id="fEnd" type="date" style="padding: 8px 10px; font-size: 12px;"/>
+          <button class="btn" id="btnClear" style="padding: 8px 16px;">Limpar</button>
+        </div>
+      </div>
+
+      <!-- RESULTADOS DIÁRIOS -->
+      <div class="card span-12">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div class="section-title" style="margin-bottom: 4px;">📊 Resultados Diários</div>
+            <div style="font-size: 11px; color: var(--muted);">
+              Barras por operação (lucro/perda) na ordem cronológica (pelos filtros).
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <select id="dailyView" style="padding: 8px 12px; font-size: 11px;">
+              <option value="all">Todos os Robôs</option>
+              <option value="robot1">Quantum WIN</option>
+              <option value="robot2">WIN PRO</option>
+              <option value="robot3">WIN LEILÃO</option>
+              <option value="robot4">Quantum AFTER</option>
+              <option value="robot5">QUANTUM DOL</option>
+              <option value="level1">Nível 1 (3,3,3,3,1)</option>
+              <option value="level2">Nível 2 (5,5,5,5,1)</option>
+              <option value="level3">Nível 3 (10,10,10,10,2)</option>
+            </select>
+            <div class="badge" id="dailyInfo">—</div>
+          </div>
+        </div>
+        <div class="chartWrap" style="height: 240px;">
+          <canvas id="dailyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- ROBÔS INDIVIDUAIS -->
+      <div class="card span-12">
+        <div class="section-title">🤖 Robôs Individuais</div>
+        <div class="robot-pills">
+          <div class="robot-pill robot-1 active" data-robot="all">Todos</div>
+          <div class="robot-pill robot-1" data-robot="robot1">Robô 1</div>
+          <div class="robot-pill robot-2" data-robot="robot2">Robô 2</div>
+          <div class="robot-pill robot-3" data-robot="robot3">Robô 3</div>
+          <div class="robot-pill robot-4" data-robot="robot4">Robô 4</div>
+          <div class="robot-pill robot-5" data-robot="robot5">Robô 5</div>
+        </div>
+        
+        <div class="mini-grid">
+          <div class="mini-card">
+            <div class="mini-label">Total</div>
+            <div class="mini-value" id="r_total">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Média/Dia</div>
+            <div class="mini-value" id="r_avg">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Melhor Dia</div>
+            <div class="mini-value pos" id="r_best">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Pior Dia</div>
+            <div class="mini-value neg" id="r_worst">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Taxa Acerto</div>
+            <div class="mini-value" id="r_winrate">0%</div>
+          </div>
+        </div>
+
+        <div class="chartWrap" style="margin-top: 16px;">
+          <canvas id="robotsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- RANKING DE ROBÔS -->
+      <div class="card span-12">
+        <div class="section-title">🏆 Ranking por Pontos</div>
+        <div class="chartWrap">
+          <canvas id="rankingChart"></canvas>
+        </div>
+      </div>
+
+      <!-- NÍVEL 1 -->
+      <div class="card span-12">
+        <div class="section-title">
+          <span class="level-badge level-1">Nível 1</span>
+          <span style="font-size: 13px; color: var(--muted);">
+            Pesos: 3× (Quantum WIN, WIN PRO, WIN LEILÃO, Quantum AFTER) + 1× (QUANTUM DOL)
+          </span>
+        </div>
+        
+        <div class="mini-grid">
+          <div class="mini-card">
+            <div class="mini-label">Total</div>
+            <div class="mini-value" id="l1_total">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Média/Dia</div>
+            <div class="mini-value" id="l1_avg">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Melhor Dia</div>
+            <div class="mini-value pos" id="l1_best">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Pior Dia</div>
+            <div class="mini-value neg" id="l1_worst">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Taxa Acerto</div>
+            <div class="mini-value" id="l1_winrate">0%</div>
+          </div>
+        </div>
+
+        <div class="chartWrap" style="margin-top: 16px;">
+          <canvas id="level1Chart"></canvas>
+        </div>
+      </div>
+
+      <!-- NÍVEL 2 -->
+      <div class="card span-12">
+        <div class="section-title">
+          <span class="level-badge level-2">Nível 2</span>
+          <span style="font-size: 13px; color: var(--muted);">
+            Pesos: 5× (Quantum WIN, WIN PRO, WIN LEILÃO, Quantum AFTER) + 1× (QUANTUM DOL)
+          </span>
+        </div>
+        
+        <div class="mini-grid">
+          <div class="mini-card">
+            <div class="mini-label">Total</div>
+            <div class="mini-value" id="l2_total">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Média/Dia</div>
+            <div class="mini-value" id="l2_avg">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Melhor Dia</div>
+            <div class="mini-value pos" id="l2_best">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Pior Dia</div>
+            <div class="mini-value neg" id="l2_worst">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Taxa Acerto</div>
+            <div class="mini-value" id="l2_winrate">0%</div>
+          </div>
+        </div>
+
+        <div class="chartWrap" style="margin-top: 16px;">
+          <canvas id="level2Chart"></canvas>
+        </div>
+      </div>
+
+      <!-- NÍVEL 3 -->
+      <div class="card span-12">
+        <div class="section-title">
+          <span class="level-badge level-3">Nível 3</span>
+          <span style="font-size: 13px; color: var(--muted);">
+            Pesos: 10× (Quantum WIN, WIN PRO, WIN LEILÃO, Quantum AFTER) + 2× (QUANTUM DOL)
+          </span>
+        </div>
+        
+        <div class="mini-grid">
+          <div class="mini-card">
+            <div class="mini-label">Total</div>
+            <div class="mini-value" id="l3_total">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Média/Dia</div>
+            <div class="mini-value" id="l3_avg">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Melhor Dia</div>
+            <div class="mini-value pos" id="l3_best">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Pior Dia</div>
+            <div class="mini-value neg" id="l3_worst">R$ 0</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Taxa Acerto</div>
+            <div class="mini-value" id="l3_winrate">0%</div>
+          </div>
+        </div>
+
+        <div class="chartWrap" style="margin-top: 16px;">
+          <canvas id="level3Chart"></canvas>
+        </div>
+      </div>
+
+      <!-- INDICADORES GERAIS -->
+      <div class="card span-3">
+        <div class="kpi">
+          <div>
+            <div class="label">Melhor Dia (Geral)</div>
+            <div class="value pos" id="g_best">R$ 0</div>
+            <div class="sub" id="g_best_date">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-3">
+        <div class="kpi">
+          <div>
+            <div class="label">Pior Dia (Geral)</div>
+            <div class="value neg" id="g_worst">R$ 0</div>
+            <div class="sub" id="g_worst_date">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-3">
+        <div class="kpi">
+          <div>
+            <div class="label">Drawdown Máximo</div>
+            <div class="value neg" id="g_dd">R$ 0</div>
+            <div class="sub">Maior queda</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card span-3">
+        <div class="kpi">
+          <div>
+            <div class="label">Total de Dias</div>
+            <div class="value" id="g_days">0</div>
+            <div class="sub"><span class="pos" id="g_pos">0</span> / <span class="neg" id="g_neg">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABELA DETALHADA -->
+      <div class="card span-12">
+        <div class="section-title">📋 Histórico Detalhado</div>
+        <div style="overflow-x: auto;">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th class="num">Robô 1</th>
+                <th class="num">Robô 2</th>
+                <th class="num">Robô 3</th>
+                <th class="num">Robô 4</th>
+                <th class="num">Robô 5</th>
+                <th class="num">Nível 1</th>
+                <th class="num">Nível 2</th>
+                <th class="num">Nível 3</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+<script>
+  const DATA_URL = "https://docs.google.com/spreadsheets/d/1TwXGDBQT9I5uv-lNc2j4b8jTm0RYKVKA2JpWNK0goUc/export?format=csv&gid=0";
+
+  // Configuração dos pesos
+  const WEIGHTS = {
+    level1: [3, 3, 3, 3, 1],
+    level2: [5, 5, 5, 5, 1],
+    level3: [10, 10, 10, 10, 2]
+  };
+
+  // Nomes padrão (serão substituídos ao carregar a planilha)
+  window.ROBOT_NAMES = [
+    'Quantum WIN',
+    'WIN PRO', 
+    'WIN LEILÃO',
+    'Quantum AFTER',
+    'QUANTUM DOL'
+  ];
+
+  let allRows = [];
+  let filtered = [];
+  let selectedRobot = 'all';
+
+  // Dados de exemplo baseados na planilha real
+  const EXAMPLE_DATA = [
+    { dateISO: '2026-01-02', dateBR: '02/01/2026', r1: 100, r2: 150, r3: -30, r4: 100, r5: 150 },
+    { dateISO: '2026-01-05', dateBR: '05/01/2026', r1: 200, r2: 100, r3: -200, r4: -200, r5: 200 },
+    { dateISO: '2026-01-06', dateBR: '06/01/2026', r1: 201, r2: 101, r3: -201, r4: -201, r5: 201 },
+    { dateISO: '2026-01-07', dateBR: '07/01/2026', r1: 202, r2: 102, r3: -202, r4: -202, r5: 202 },
+    { dateISO: '2026-01-08', dateBR: '08/01/2026', r1: 203, r2: 103, r3: -203, r4: -203, r5: 203 },
+    { dateISO: '2026-01-09', dateBR: '09/01/2026', r1: 204, r2: 104, r3: -204, r4: -204, r5: 204 },
+    { dateISO: '2026-01-12', dateBR: '12/01/2026', r1: 205, r2: 105, r3: -205, r4: -205, r5: 205 },
+    { dateISO: '2026-01-13', dateBR: '13/01/2026', r1: 206, r2: 106, r3: -206, r4: -206, r5: 206 },
+    { dateISO: '2026-01-14', dateBR: '14/01/2026', r1: 207, r2: 107, r3: -207, r4: -207, r5: 207 },
+    { dateISO: '2026-01-15', dateBR: '15/01/2026', r1: 100, r2: 150, r3: -30, r4: 100, r5: 150 },
+  ];
+
+  function formatBRL(n) {
+    return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function parseQuantumCSV(raw) {
+    // Formato real: Data,Quantum WIN,WIN PRO,WIN LEILÃO,Quantum AFTER,QUANTUM DOL
+    if (!raw || !raw.trim()) {
+      console.log('CSV vazio');
+      return [];
+    }
+    
+    console.log('CSV recebido, tamanho:', raw.length, 'caracteres');
+    console.log('Primeiras 300 caracteres:', raw.substring(0, 300));
+    
+    const lines = raw.split(/\r?\n/).map(l => l.trimEnd());
+    console.log('Total de linhas:', lines.length);
+    
+    if (lines.length < 2) {
+      console.log('Menos de 2 linhas');
+      return [];
+    }
+    
+    // Lê o cabeçalho para pegar os nomes dos robôs
+    const header = lines[0].split(',').map(c => c.trim());
+    console.log('Cabeçalho completo:', header);
+    console.log('Colunas no cabeçalho:', header.length);
+    
+    // Os nomes dos robôs são as colunas 1 a 5 (depois de "Data")
+    const robotNames = header.slice(1, 6);
+    console.log('Nomes dos robôs extraídos:', robotNames);
+    
+    // Atualiza os nomes globais
+    window.ROBOT_NAMES = robotNames.length === 5 ? robotNames : [
+      'Quantum WIN', 'WIN PRO', 'WIN LEILÃO', 'Quantum AFTER', 'QUANTUM DOL'
+    ];
+    
+    const rows = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line || !line.trim()) continue;
+      
+      const cols = line.split(',').map(c => c.trim());
+      
+      // Debug primeira linha de dados
+      if (i === 1) {
+        console.log('Primeira linha de dados:', cols);
+        console.log('Número de colunas:', cols.length);
+      }
+      
+      // Precisa ter pelo menos 6 colunas (data + 5 robôs)
+      if (cols.length < 6) {
+        console.log(`Linha ${i} ignorada, apenas ${cols.length} colunas:`, line);
+        continue;
+      }
+      
+      const dateStr = cols[0].trim();
+      
+      // Formato: DD/MM/YYYY
+      if (!dateStr.match(/\d{2}\/\d{2}\/\d{4}/)) {
+        console.log(`Linha ${i} ignorada, data inválida:`, dateStr);
+        continue;
+      }
+      
+      const [d, m, y] = dateStr.split('/');
+      const dateISO = `${y}-${m}-${d}`;
+      
+      // Parse dos valores (agora são números diretos, podem ser negativos)
+      function parseValue(str) {
+        if (!str) return 0;
+        // Remove espaços
+        const val = str.trim();
+        const num = parseFloat(val);
+        return isNaN(num) ? 0 : num;
+      }
+      
+      const row = {
+        dateISO,
+        dateBR: dateStr,
+        r1: parseValue(cols[1]),  // Quantum WIN
+        r2: parseValue(cols[2]),  // WIN PRO
+        r3: parseValue(cols[3]),  // WIN LEILÃO
+        r4: parseValue(cols[4]),  // Quantum AFTER
+        r5: parseValue(cols[5]),  // QUANTUM DOL
+      };
+      
+      rows.push(row);
+      
+      // Debug primeiras linhas
+      if (i <= 3) {
+        console.log(`Linha ${i} parseada:`, row);
+      }
+    }
+    
+    console.log('Total de linhas parseadas:', rows.length);
+    if (rows.length > 0) {
+      console.log('Primeira linha parseada:', rows[0]);
+      console.log('Última linha parseada:', rows[rows.length - 1]);
+    }
+    
+    return rows.sort((a, b) => a.dateISO.localeCompare(b.dateISO));
+  }
+
+  function calculateLevel(row, weights) {
+    return row.r1 * weights[0] + row.r2 * weights[1] + row.r3 * weights[2] + 
+           row.r4 * weights[3] + row.r5 * weights[4];
+  }
+
+  function getStats(data, robotKey) {
+    if (!data.length) return { total: 0, avg: 0, best: 0, worst: 0, winrate: 0 };
+    
+    let values = data.map(r => robotKey ? r[robotKey] : 
+      (r.r1 + r.r2 + r.r3 + r.r4 + r.r5));
+    
+    const total = values.reduce((sum, v) => sum + v, 0);
+    const avg = total / values.length;
+    const best = Math.max(...values);
+    const worst = Math.min(...values);
+    const wins = values.filter(v => v > 0).length;
+    const winrate = (wins / values.length * 100).toFixed(1);
+    
+    return { total, avg, best, worst, winrate };
+  }
+
+  function getLevelStats(data, weights) {
+    if (!data.length) return { total: 0, avg: 0, best: 0, worst: 0, winrate: 0 };
+    
+    const values = data.map(r => calculateLevel(r, weights));
+    const total = values.reduce((sum, v) => sum + v, 0);
+    const avg = total / values.length;
+    const best = Math.max(...values);
+    const worst = Math.min(...values);
+    const wins = values.filter(v => v > 0).length;
+    const winrate = (wins / values.length * 100).toFixed(1);
+    
+    return { total, avg, best, worst, winrate };
+  }
+
+  function updateRobotLabels() {
+    const pills = document.querySelectorAll('.robot-pill');
+    pills.forEach((pill, idx) => {
+      if (idx === 0) return; // Skip "Todos"
+      const robotIdx = idx - 1;
+      if (window.ROBOT_NAMES && window.ROBOT_NAMES[robotIdx]) {
+        pill.textContent = window.ROBOT_NAMES[robotIdx];
+      }
+    });
+    
+    // Atualiza cabeçalhos da tabela
+    const headers = document.querySelectorAll('#tbl thead th');
+    window.ROBOT_NAMES.forEach((name, idx) => {
+      if (headers[idx + 1]) {
+        headers[idx + 1].textContent = name;
+      }
+    });
+    
+    // Atualiza select do gráfico diário
+    const dailyView = document.getElementById('dailyView');
+    const options = dailyView.querySelectorAll('option');
+    window.ROBOT_NAMES.forEach((name, idx) => {
+      if (options[idx + 1]) {
+        options[idx + 1].textContent = name;
+      }
+    });
+  }
+
+  function renderMainKPIs() {
+    if (!filtered.length) return;
+    
+    // Calcula usando Nível 3 (mais agressivo) para os KPIs principais
+    const values = filtered.map(r => calculateLevel(r, WEIGHTS.level3));
+    const total = values.reduce((sum, v) => sum + v, 0);
+    const pos = values.filter(v => v > 0).length;
+    const neg = values.filter(v => v < 0).length;
+    const winrate = (pos / values.length * 100).toFixed(1);
+    const best = Math.max(...values);
+    const worst = Math.min(...values);
+    
+    // Encontra as datas do melhor e pior
+    const bestIdx = values.indexOf(best);
+    const worstIdx = values.indexOf(worst);
+    
+    document.getElementById('main_total').textContent = formatBRL(total);
+    document.getElementById('main_total').className = `value ${total >= 0 ? 'pos' : 'neg'}`;
+    document.getElementById('main_period').textContent = `${filtered.length} dias`;
+    
+    document.getElementById('main_days').textContent = filtered.length;
+    document.getElementById('main_pos').textContent = pos;
+    document.getElementById('main_neg').textContent = neg;
+    
+    document.getElementById('main_winrate').textContent = winrate + '%';
+    document.getElementById('main_winrate').className = winrate >= 70 ? 'value pos' : winrate >= 50 ? 'value' : 'value neg';
+    
+    document.getElementById('main_best').textContent = formatBRL(best);
+    document.getElementById('main_best_date').textContent = filtered[bestIdx]?.dateBR || '—';
+    
+    document.getElementById('main_worst').textContent = formatBRL(worst);
+    document.getElementById('main_worst_date').textContent = filtered[worstIdx]?.dateBR || '—';
+  }
+
+  function renderRobotStats() {
+    let data = filtered;
+    let robotKey = null;
+    
+    if (selectedRobot !== 'all') {
+      robotKey = selectedRobot.replace('robot', 'r');
+    }
+    
+    const stats = getStats(data, robotKey);
+    
+    document.getElementById('r_total').textContent = formatBRL(stats.total);
+    document.getElementById('r_total').className = `mini-value ${stats.total >= 0 ? 'pos' : 'neg'}`;
+    document.getElementById('r_avg').textContent = formatBRL(stats.avg);
+    document.getElementById('r_best').textContent = formatBRL(stats.best);
+    document.getElementById('r_worst').textContent = formatBRL(stats.worst);
+    document.getElementById('r_winrate').textContent = stats.winrate + '%';
+  }
+
+  function renderLevelStats(level, weights) {
+    const stats = getLevelStats(filtered, weights);
+    const prefix = `l${level}`;
+    
+    document.getElementById(`${prefix}_total`).textContent = formatBRL(stats.total);
+    document.getElementById(`${prefix}_total`).className = `mini-value ${stats.total >= 0 ? 'pos' : 'neg'}`;
+    document.getElementById(`${prefix}_avg`).textContent = formatBRL(stats.avg);
+    document.getElementById(`${prefix}_best`).textContent = formatBRL(stats.best);
+    document.getElementById(`${prefix}_worst`).textContent = formatBRL(stats.worst);
+    document.getElementById(`${prefix}_winrate`).textContent = stats.winrate + '%';
+  }
+
+  function renderGeneralStats() {
+    if (!filtered.length) return;
+    
+    // Melhor e pior dia considerando nível 3
+    const level3Values = filtered.map(r => ({
+      date: r.dateBR,
+      value: calculateLevel(r, WEIGHTS.level3)
+    }));
+    
+    const best = level3Values.reduce((max, curr) => curr.value > max.value ? curr : max);
+    const worst = level3Values.reduce((min, curr) => curr.value < min.value ? curr : min);
+    
+    document.getElementById('g_best').textContent = formatBRL(best.value);
+    document.getElementById('g_best_date').textContent = best.date;
+    document.getElementById('g_worst').textContent = formatBRL(worst.value);
+    document.getElementById('g_worst_date').textContent = worst.date;
+    
+    // DD
+    let acc = 0, peak = 0, dd = 0;
+    for (const r of filtered) {
+      acc += calculateLevel(r, WEIGHTS.level3);
+      if (acc > peak) peak = acc;
+      const currDD = peak - acc;
+      if (currDD > dd) dd = currDD;
+    }
+    document.getElementById('g_dd').textContent = formatBRL(-dd);
+    
+    // Dias
+    const pos = level3Values.filter(v => v.value > 0).length;
+    const neg = level3Values.filter(v => v.value < 0).length;
+    document.getElementById('g_days').textContent = filtered.length;
+    document.getElementById('g_pos').textContent = pos;
+    document.getElementById('g_neg').textContent = neg;
+  }
+
+  function drawChart(canvas, data, weights = null, colors = null) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+    const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+    
+    if (!data.length) return;
+    
+    const pad = 40 * devicePixelRatio;
+    const chartW = w - pad * 2;
+    const chartH = h - pad * 2;
+    
+    // Get values
+    let points;
+    if (weights) {
+      // Level chart
+      let acc = 0;
+      points = data.map(r => {
+        acc += calculateLevel(r, weights);
+        return acc;
+      });
+    } else if (selectedRobot === 'all') {
+      // All robots combined
+      let acc = 0;
+      points = data.map(r => {
+        acc += r.r1 + r.r2 + r.r3 + r.r4 + r.r5;
+        return acc;
+      });
+    } else {
+      // Single robot
+      const rKey = selectedRobot.replace('robot', 'r');
+      let acc = 0;
+      points = data.map(r => {
+        acc += r[rKey];
+        return acc;
+      });
+    }
+    
+    const max = Math.max(...points);
+    const min = Math.min(...points, 0);
+    const range = max - min || 1;
+    
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad + (chartH / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(pad, y);
+      ctx.lineTo(w - pad, y);
+      ctx.stroke();
+    }
+    
+    // Line
+    ctx.strokeStyle = colors || '#5b8cff';
+    ctx.lineWidth = 2.5 * devicePixelRatio;
+    ctx.beginPath();
+    
+    points.forEach((p, i) => {
+      const x = pad + (chartW / (points.length - 1 || 1)) * i;
+      const y = pad + chartH - ((p - min) / range) * chartH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    
+    ctx.stroke();
+    
+    // Area
+    const gradient = ctx.createLinearGradient(0, pad, 0, h - pad);
+    gradient.addColorStop(0, colors ? colors.replace(')', ', 0.3)').replace('rgb', 'rgba') : 'rgba(91,140,255,0.3)');
+    gradient.addColorStop(1, 'rgba(91,140,255,0)');
+    
+    ctx.lineTo(w - pad, h - pad);
+    ctx.lineTo(pad, h - pad);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+  }
+
+  function drawMainCurveChart(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+    const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+    
+    if (!data.length) return;
+    
+    const pad = 40 * devicePixelRatio;
+    const chartW = w - pad * 2;
+    const chartH = h - pad * 2;
+    
+    // Pega visualização selecionada
+    const view = document.getElementById('mainViewSelector').value;
+    
+    // Curva acumulada conforme seleção
+    let acc = 0;
+    const points = data.map(r => {
+      if (view === 'level3') acc += calculateLevel(r, WEIGHTS.level3);
+      else if (view === 'level2') acc += calculateLevel(r, WEIGHTS.level2);
+      else if (view === 'level1') acc += calculateLevel(r, WEIGHTS.level1);
+      else acc += r.r1 + r.r2 + r.r3 + r.r4 + r.r5;
+      return acc;
+    });
+    
+    const max = Math.max(...points);
+    const min = Math.min(...points, 0);
+    const range = max - min || 1;
+    
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad + (chartH / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(pad, y);
+      ctx.lineTo(w - pad, y);
+      ctx.stroke();
+    }
+    
+    // Linha
+    ctx.strokeStyle = '#5b8cff';
+    ctx.lineWidth = 3 * devicePixelRatio;
+    ctx.beginPath();
+    
+    points.forEach((p, i) => {
+      const x = pad + (chartW / (points.length - 1 || 1)) * i;
+      const y = pad + chartH - ((p - min) / range) * chartH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    
+    ctx.stroke();
+    
+    // Área
+    const gradient = ctx.createLinearGradient(0, pad, 0, h - pad);
+    gradient.addColorStop(0, 'rgba(91,140,255,0.3)');
+    gradient.addColorStop(1, 'rgba(91,140,255,0)');
+    
+    ctx.lineTo(w - pad, h - pad);
+    ctx.lineTo(pad, h - pad);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // Label final
+    ctx.fillStyle = 'white';
+    ctx.font = `${12 * devicePixelRatio}px sans-serif`;
+    ctx.textAlign = 'right';
+    const finalValue = points[points.length - 1];
+    ctx.fillText(`Final: ${formatBRL(finalValue)}`, w - pad - 8 * devicePixelRatio, pad + 20 * devicePixelRatio);
+  }
+
+  function drawMonthlyChart(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+    const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+    
+    if (!data.length) return;
+    
+    const pad = 40 * devicePixelRatio;
+    const chartW = w - pad * 2;
+    const chartH = h - pad * 2;
+    
+    // Usa mesma visualização que o gráfico principal
+    const view = document.getElementById('mainViewSelector').value;
+    
+    // Agrupa por mês
+    const byMonth = new Map();
+    data.forEach(r => {
+      const month = r.dateISO.substring(0, 7); // YYYY-MM
+      let value;
+      if (view === 'level3') value = calculateLevel(r, WEIGHTS.level3);
+      else if (view === 'level2') value = calculateLevel(r, WEIGHTS.level2);
+      else if (view === 'level1') value = calculateLevel(r, WEIGHTS.level1);
+      else value = r.r1 + r.r2 + r.r3 + r.r4 + r.r5;
+      
+      byMonth.set(month, (byMonth.get(month) || 0) + value);
+    });
+    
+    const months = Array.from(byMonth.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    if (!months.length) return;
+    
+    const maxAbs = Math.max(...months.map(m => Math.abs(m[1])));
+    const zeroY = pad + chartH / 2;
+    const barW = (chartW / months.length) * 0.7;
+    const spacing = (chartW / months.length) * 0.3;
+    
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad + (chartH / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(pad, y);
+      ctx.lineTo(w - pad, y);
+      ctx.stroke();
+    }
+    
+    // Linha zero
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.beginPath();
+    ctx.moveTo(pad, zeroY);
+    ctx.lineTo(w - pad, zeroY);
+    ctx.stroke();
+    
+    months.forEach(([month, value], i) => {
+      const x = pad + (barW + spacing) * i + spacing / 2;
+      const barH = (Math.abs(value) / maxAbs) * (chartH / 2) * 0.9;
+      
+      if (value >= 0) {
+        const y = zeroY - barH;
+        ctx.fillStyle = '#3ddc97';
+        ctx.fillRect(x, y, barW, barH);
+      } else {
+        ctx.fillStyle = '#ff5b6e';
+        ctx.fillRect(x, zeroY, barW, barH);
+      }
+      
+      // Label do mês
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = `${9 * devicePixelRatio}px sans-serif`;
+      ctx.textAlign = 'center';
+      const [y, m] = month.split('-');
+      ctx.fillText(`${m}/${y.substring(2)}`, x + barW / 2, h - pad + 15 * devicePixelRatio);
+    });
+  }
+
+  function drawDailyBarsChart(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+    const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+    
+    if (!data.length) {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = `${12 * devicePixelRatio}px sans-serif`;
+      ctx.fillText('Sem dados para exibir', w / 2 - 60 * devicePixelRatio, h / 2);
+      return;
+    }
+    
+    const pad = 40 * devicePixelRatio;
+    const chartW = w - pad * 2;
+    const chartH = h - pad * 2;
+    
+    // Pega os valores baseado na visualização selecionada
+    const dailyView = document.getElementById('dailyView').value;
+    let values = [];
+    
+    if (dailyView === 'all') {
+      values = data.map(r => r.r1 + r.r2 + r.r3 + r.r4 + r.r5);
+    } else if (dailyView === 'level1') {
+      values = data.map(r => calculateLevel(r, WEIGHTS.level1));
+    } else if (dailyView === 'level2') {
+      values = data.map(r => calculateLevel(r, WEIGHTS.level2));
+    } else if (dailyView === 'level3') {
+      values = data.map(r => calculateLevel(r, WEIGHTS.level3));
+    } else {
+      const rKey = dailyView.replace('robot', 'r');
+      values = data.map(r => r[rKey]);
+    }
+    
+    const maxAbs = Math.max(...values.map(v => Math.abs(v))) || 1;
+    const zeroY = pad + chartH / 2;
+    
+    // Grid horizontal
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad + (chartH / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(pad, y);
+      ctx.lineTo(w - pad, y);
+      ctx.stroke();
+    }
+    
+    // Linha zero
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(pad, zeroY);
+    ctx.lineTo(w - pad, zeroY);
+    ctx.stroke();
+    
+    const barW = chartW / values.length * 0.8;
+    const spacing = chartW / values.length * 0.2;
+    
+    values.forEach((val, i) => {
+      const x = pad + (barW + spacing) * i;
+      const barH = (Math.abs(val) / maxAbs) * (chartH / 2) * 0.9;
+      
+      // Cor: verde para positivo, vermelho para negativo, gradiente
+      let gradient;
+      if (val >= 0) {
+        const y = zeroY - barH;
+        gradient = ctx.createLinearGradient(0, y, 0, zeroY);
+        gradient.addColorStop(0, '#3ddc97');
+        gradient.addColorStop(1, '#5b8cff');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, y, barW, barH);
+      } else {
+        const y = zeroY;
+        gradient = ctx.createLinearGradient(0, y, 0, y + barH);
+        gradient.addColorStop(0, '#ff5b6e');
+        gradient.addColorStop(1, '#ff9500');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, y, barW, barH);
+      }
+    });
+    
+    // Atualiza badge com info
+    const total = values.reduce((sum, v) => sum + v, 0);
+    const pos = values.filter(v => v > 0).length;
+    const neg = values.filter(v => v < 0).length;
+    document.getElementById('dailyInfo').textContent = `${values.length} ops · ${formatBRL(total)}`;
+  }
+
+  function drawRankingChart(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+    const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+    
+    if (!data.length) return;
+    
+    const pad = 40 * devicePixelRatio;
+    const chartW = w - pad * 2;
+    const chartH = h - pad * 2;
+    
+    // Calculate totals em PONTOS (dividindo por 0.2)
+    const totals = [
+      { 
+        name: window.ROBOT_NAMES[0] || 'Robô 1', 
+        value: data.reduce((sum, r) => sum + r.r1, 0),
+        points: data.reduce((sum, r) => sum + r.r1, 0) / 0.2,
+        color: '#5b8cff' 
+      },
+      { 
+        name: window.ROBOT_NAMES[1] || 'Robô 2', 
+        value: data.reduce((sum, r) => sum + r.r2, 0),
+        points: data.reduce((sum, r) => sum + r.r2, 0) / 0.2,
+        color: '#3ddc97' 
+      },
+      { 
+        name: window.ROBOT_NAMES[2] || 'Robô 3', 
+        value: data.reduce((sum, r) => sum + r.r3, 0),
+        points: data.reduce((sum, r) => sum + r.r3, 0) / 0.2,
+        color: '#ffcc66' 
+      },
+      { 
+        name: window.ROBOT_NAMES[3] || 'Robô 4', 
+        value: data.reduce((sum, r) => sum + r.r4, 0),
+        points: data.reduce((sum, r) => sum + r.r4, 0) / 0.2,
+        color: '#7c5bff' 
+      },
+      { 
+        name: window.ROBOT_NAMES[4] || 'Robô 5', 
+        value: data.reduce((sum, r) => sum + r.r5, 0),
+        points: data.reduce((sum, r) => sum + r.r5, 0) / 0.2,
+        color: '#ff5b6e' 
+      },
+    ].sort((a, b) => b.points - a.points);
+    
+    const maxPoints = Math.max(...totals.map(t => Math.abs(t.points)));
+    const barHeight = chartH / totals.length * 0.7;
+    const spacing = chartH / totals.length * 0.3;
+    
+    totals.forEach((robot, i) => {
+      const barW = (Math.abs(robot.points) / maxPoints) * chartW * 0.85;
+      const y = pad + (barHeight + spacing) * i;
+      
+      // Barra colorida
+      ctx.fillStyle = robot.color;
+      ctx.fillRect(pad, y, barW, barHeight);
+      
+      // Label do robô (nome completo)
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.font = `${11 * devicePixelRatio}px sans-serif`;
+      ctx.fontWeight = '600';
+      ctx.fillText(robot.name, pad + 8 * devicePixelRatio, y + barHeight / 2 + 4 * devicePixelRatio);
+      
+      // Valor em PONTOS (sem R$, formatado com separador de milhar)
+      ctx.textAlign = 'right';
+      ctx.font = `${12 * devicePixelRatio}px sans-serif`;
+      ctx.fontWeight = '700';
+      const pointsText = Math.round(robot.points).toLocaleString('pt-BR') + ' pts';
+      ctx.fillText(pointsText, w - pad - 8 * devicePixelRatio, y + barHeight / 2 + 4 * devicePixelRatio);
+      ctx.textAlign = 'left';
+    });
+  }
+
+  function renderCharts() {
+    drawMainCurveChart(document.getElementById('mainCurveChart'), filtered);
+    drawMonthlyChart(document.getElementById('monthlyChart'), filtered);
+    drawDailyBarsChart(document.getElementById('dailyChart'), filtered);
+    drawChart(document.getElementById('robotsChart'), filtered);
+    drawRankingChart(document.getElementById('rankingChart'), filtered);
+    drawChart(document.getElementById('level1Chart'), filtered, WEIGHTS.level1, '#5b8cff');
+    drawChart(document.getElementById('level2Chart'), filtered, WEIGHTS.level2, '#ffcc66');
+    drawChart(document.getElementById('level3Chart'), filtered, WEIGHTS.level3, '#7c5bff');
+  }
+
+  function renderTable() {
+    const tbody = document.querySelector('#tbl tbody');
+    tbody.innerHTML = '';
+    
+    filtered.slice(0, 50).forEach(r => {
+      const l1 = calculateLevel(r, WEIGHTS.level1);
+      const l2 = calculateLevel(r, WEIGHTS.level2);
+      const l3 = calculateLevel(r, WEIGHTS.level3);
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.dateBR}</td>
+        <td class="num ${r.r1 >= 0 ? 'pos' : 'neg'}">${formatBRL(r.r1)}</td>
+        <td class="num ${r.r2 >= 0 ? 'pos' : 'neg'}">${formatBRL(r.r2)}</td>
+        <td class="num ${r.r3 >= 0 ? 'pos' : 'neg'}">${formatBRL(r.r3)}</td>
+        <td class="num ${r.r4 >= 0 ? 'pos' : 'neg'}">${formatBRL(r.r4)}</td>
+        <td class="num ${r.r5 >= 0 ? 'pos' : 'neg'}">${formatBRL(r.r5)}</td>
+        <td class="num ${l1 >= 0 ? 'pos' : 'neg'}">${formatBRL(l1)}</td>
+        <td class="num ${l2 >= 0 ? 'pos' : 'neg'}">${formatBRL(l2)}</td>
+        <td class="num ${l3 >= 0 ? 'pos' : 'neg'}">${formatBRL(l3)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function render() {
+    renderMainKPIs();
+    renderRobotStats();
+    renderLevelStats(1, WEIGHTS.level1);
+    renderLevelStats(2, WEIGHTS.level2);
+    renderLevelStats(3, WEIGHTS.level3);
+    renderGeneralStats();
+    renderCharts();
+    renderTable();
+  }
+
+  function applyFilters() {
+    const period = document.getElementById('fPeriod').value;
+    const start = document.getElementById('fStart').value;
+    const end = document.getElementById('fEnd').value;
+    
+    filtered = allRows.filter(r => {
+      if (period === 'today') {
+        const today = new Date().toISOString().split('T')[0];
+        return r.dateISO === today;
+      }
+      if (period === 'week') {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return r.dateISO >= weekAgo.toISOString().split('T')[0];
+      }
+      if (period === 'month') {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        return r.dateISO >= monthAgo.toISOString().split('T')[0];
+      }
+      if (period === 'custom') {
+        if (start && r.dateISO < start) return false;
+        if (end && r.dateISO > end) return false;
+      }
+      return true;
+    });
+    
+    render();
+  }
+
+  function setDefaultDateRange() {
+    if (!allRows.length) return;
+    
+    // Ordena por data para garantir que pega a mais recente
+    const sortedRows = [...allRows].sort((a, b) => b.dateISO.localeCompare(a.dateISO));
+    const lastDate = new Date(sortedRows[0].dateISO);
+    const firstDate = new Date(lastDate);
+    firstDate.setDate(firstDate.getDate() - 30); // 30 dias atrás
+    
+    document.getElementById('fStart').value = firstDate.toISOString().split('T')[0];
+    document.getElementById('fEnd').value = sortedRows[0].dateISO;
+    
+    // Define período como "custom" 
+    document.getElementById('fPeriod').value = 'custom';
+  }
+
+  async function loadData() {
+    try {
+      document.getElementById('status').textContent = 'Carregando...';
+      
+      // Verifica se está rodando localmente
+      if (window.location.protocol === 'file:') {
+        throw new Error('Arquivo aberto localmente (file://). Para carregar dados online, hospede em um servidor.');
+      }
+      
+      const res = await fetch(DATA_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('Erro ao carregar planilha: ' + res.status);
+      const csv = await res.text();
+      console.log('CSV carregado, primeiras linhas:', csv.substring(0, 200));
+      
+      allRows = parseQuantumCSV(csv);
+      console.log('Linhas parseadas:', allRows.length);
+      
+      // Fallback para dados de exemplo se não conseguir carregar
+      if (!allRows.length) {
+        console.warn('Planilha vazia, usando dados de exemplo');
+        allRows = EXAMPLE_DATA;
+      }
+      
+      filtered = allRows;
+      
+      setDefaultDateRange();
+      updateRobotLabels(); // Atualiza os nomes dos robôs
+      applyFilters(); // Aplica filtro de 30 dias
+      
+      document.getElementById('status').textContent = 'Online - ' + allRows.length + ' dias';
+      return true;
+    } catch (e) {
+      console.error('Erro ao carregar dados:', e);
+      console.log('Usando dados de exemplo...');
+      
+      // Em caso de erro, usa dados de exemplo
+      allRows = EXAMPLE_DATA;
+      filtered = allRows;
+      
+      setDefaultDateRange();
+      updateRobotLabels();
+      applyFilters(); // Aplica filtro de 30 dias
+      
+      // Mensagem mais clara sobre o erro
+      if (window.location.protocol === 'file:') {
+        document.getElementById('status').textContent = 'Modo Local (dados exemplo)';
+        console.warn('⚠️ Aberto localmente. Para usar dados reais, hospede online (Netlify, Vercel, etc.)');
+      } else if (e.message.includes('400')) {
+        document.getElementById('status').textContent = 'Erro 400 - Link da planilha inválido';
+        console.error('⚠️ A planilha retornou erro 400. Verifique se o link de publicação está correto.');
+      } else {
+        document.getElementById('status').textContent = 'Erro ao carregar';
+      }
+      
+      return false;
+    }
+  }
+
+  // Event listeners
+  document.getElementById('fPeriod').addEventListener('change', () => {
+    applyFilters();
+  });
+
+  document.getElementById('fStart').addEventListener('change', applyFilters);
+  document.getElementById('fEnd').addEventListener('change', applyFilters);
+  document.getElementById('btnClear').addEventListener('click', () => {
+    document.getElementById('fPeriod').value = 'custom';
+    setDefaultDateRange();
+    applyFilters();
+  });
+
+  document.getElementById('btnRefresh').addEventListener('click', loadData);
+
+  document.getElementById('dailyView').addEventListener('change', () => {
+    renderCharts();
+  });
+
+  document.getElementById('mainViewSelector').addEventListener('change', () => {
+    renderCharts();
+  });
+
+  document.querySelectorAll('.robot-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.robot-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      selectedRobot = pill.dataset.robot;
+      render();
+    });
+  });
+
+  // Initialize
+  loadData();
+</script>
+</body>
+</html>
